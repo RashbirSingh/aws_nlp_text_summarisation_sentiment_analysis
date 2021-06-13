@@ -1,0 +1,37 @@
+<!doctype html>
+{% extends "base.html" %}
+{% block login %}
+<li><a href="logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+{% endblock %}
+{% block body %}
+<h1 style="color: #CDCDCD;
+    padding-left: 9.5%;
+    padding-bottom: 3%;">DOCUMENT UPLOAD PAGE</h1>
+
+
+<div class="container">
+    <div class="row">
+        <div class="col col-lg-12"
+             style="background: #CDCDCD;
+             flex: 1;
+             height: -webkit-fill-available;
+             background: lightgrey;
+             border: 3px solid grey;">
+            <h1 style="font-size: -webkit-xxx-large+30px; text-align: center;">Summary Result</h1><br>
+
+            <div class="container" style="width:80%; padding-top: 5%;">
+
+                {{ summaryresultdata }}
+
+            </div>
+
+            <div class="container">
+                <img style="margin-top: 40px; display: block; margin-left: auto; margin-right: auto; width: 50%;"
+                     src="static/plots/sentimentgraph.png" alt="No sentiment Result">
+            </div>
+
+
+        </div>
+    </div>
+
+    {% endblock %}

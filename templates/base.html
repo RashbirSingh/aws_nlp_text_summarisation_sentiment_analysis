@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+
+   <title>s3810585 Assignment 2</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  </head>
+  <body style="background-color: #222;">
+
+
+<nav class="navbar navbar-inverse" style="border-bottom:3px solid #000;">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">s3810585 - Rashbir Singh Kohli</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li ><a href="/">Home</a></li>
+    </ul>
+
+    <ul class="nav navbar-nav">
+      <li ><a href="documentPage">Process Document</a></li>
+    </ul>
+
+    <ul class="nav navbar-nav">
+      <li ><a href="processAPI">Process Using APIs</a></li>
+    </ul>
+
+    <ul class="nav navbar-nav">
+      <li ><a href="summaryresult">Past Summary Result</a></li>
+    </ul>
+
+    <ul class="nav navbar-nav navbar-right">
+      <li><a href="register"><span class="glyphicon glyphicon-user"></span> Register</a></li>
+      {% block login %}
+       {% endblock %}
+
+    </ul>
+  </div>
+</nav>
+  {% block body %}
+  {% endblock %}
+     </body>
+</html>
