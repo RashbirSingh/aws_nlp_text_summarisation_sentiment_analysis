@@ -16,10 +16,6 @@ import uuid
 from textblob import TextBlob
 from matplotlib.figure import Figure
 import time
-import os
-import tweepy as tw
-import json
-import wget
 
 #python -m spacy download en_core_web_sm
 nlp = en_core_web_sm.load()
@@ -31,26 +27,16 @@ os.environ["aws_access_key_id"] = config["aws_access_key_id"]
 os.environ["aws_secret_access_key"] = config["aws_secret_access_key"]
 os.environ["region_name"] = config["region_name"]
 newsapi = NewsApiClient(api_key=config['api_key'])
-consumer_key= config['consumer_key']
-consumer_secret= config['consumer_secret']
-access_token= config['access_token']
-access_token_secret= config['access_token_secret']
-auth = tw.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
-api = tw.API(auth, wait_on_rate_limit=True)
 
 dynamodb = boto3.resource('dynamodb', aws_access_key_id=os.getenv("aws_access_key_id"),
                           aws_secret_access_key=os.getenv("aws_secret_access_key"),
                           region_name=os.getenv("region_name"))
-athenaclient = boto3.client('athena',  aws_access_key_id=os.getenv("aws_access_key_id"),
-                          aws_secret_access_key=os.getenv("aws_secret_access_key"),
-                          region_name=os.getenv("region_name"))
 
-def upload_file(file_name, bucket, finalpath):
+def upload_file(file_name, bucket):
 
     s3_client = boto3.client('s3', aws_access_key_id=os.getenv("aws_access_key_id"),
                           aws_secret_access_key=os.getenv("aws_secret_access_key"))
-    s3_client.upload_file(file_name, bucket, finalpath)
+    s3_client.upload_file(file_name, bucket, file_name.split('/')[-1])
 
 
 def my_random_string(string_length=10):
@@ -230,7 +216,7 @@ def documentsProcess():
             }
         )
 
-        upload_file('static/doc/'+uploaded_file.filename, "storage-s3810585", uploaded_file.filename)
+        upload_file('static/doc/'+uploaded_file.filename, "storage-s3810585")
 
         if 'CurrentActiveUser' in session:
             return render_template('analysisresult.html',
@@ -392,117 +378,6 @@ def textSentimentAnalysis(text):
     fig.savefig("static/plots/sentimentgraph.png")
 
     return summarypolarity
-
-@app.route("/ProcessTwitterAPI", methods=['GET', 'POST'])
-def ProcessTwitterAPI():
-    if 'CurrentActiveUser' in session:
-        return render_template('processTwitterAPI.html',
-                               userlog = "logout",
-                               userlogimage = "log-out",
-                               userlogtext = " Logout")
-    else:
-        return render_template('login.html',
-                               userlog="login",
-                               userlogimage="log-in",
-                               userlogtext=" Login")
-
-
-def athenaScript():
-    query = 'SELECT * FROM "twitterdatabase"."twitterdata" limit 10;'
-    database = "twitterdatabase"
-    athena_result_bucket = "s3://storage-s3810585/athenaoutput/"
-
-    response = athenaclient.start_query_execution(
-        QueryString=query,
-        QueryExecutionContext={
-            'Database': database
-        },
-        ResultConfiguration={
-            'OutputLocation': athena_result_bucket,
-        }
-    )
-    return response["QueryExecutionId"]
-
-def pushTweetTos3(keyword):
-    tweets = tw.Cursor(api.search,
-                       q=keyword,
-                       lang="en").items(10)
-
-    # Iterate and print tweets
-    i = 0
-    for tweet in tweets:
-        i = i + 1
-        with open("static/tweet/Tweet_"+str(i)+".json", 'w') as f:
-            json.dump(tweet._json, f)
-            f.close()
-            upload_file("static/tweet/Tweet_"+str(i)+".json", "storage-s3810585",
-                        "TwitterData/data/Tweet_"+str(i)+".json")
-
-
-@app.route("/TwitterTextToSearch", methods=['GET', 'POST'])
-def TwitterTextToSearch():
-    APITextToSearch = request.form["TextToSearch"]
-    pushTweetTos3(APITextToSearch)
-    processedDataName = athenaScript()
-    print("https://storage-s3810585.s3.amazonaws.com/athenaoutput/"+processedDataName+".csv")
-    wget.download("https://storage-s3810585.s3.amazonaws.com/athenaoutput/"+processedDataName+".csv")
-    df = pd.read_csv(processedDataName+".csv")
-    raw = ".".join(df.text)
-    if len(raw) < 3:
-        if 'CurrentActiveUser' in session:
-            return render_template('analysisresult.html',
-                                   summaryresultdata="No Results!",
-                                   userlog="logout",
-                                   userlogimage="log-out",
-                                   userlogtext=" Logout")
-        else:
-            return render_template('analysisresult.html',
-                                   summaryresultdata="No Results!",
-                                   userlog="login",
-                                   userlogimage="log-in",
-                                   userlogtext=" Login")
-    summary = textSummarizer(raw)
-    sentimentScore = textSentimentAnalysis(summary)
-
-    email = session["CurrentActiveUser"]
-
-    table = dynamodb.Table('usersummary')
-    table.put_item(
-        Item={
-            'count': my_random_string(),
-            'email': email,
-            'isDocument': 0,
-            'for': APITextToSearch,
-            'summary': summary,
-            'sentimentScore': int(sentimentScore*100),
-        }
-    )
-
-    while not os.path.exists("static/plots/sentimentgraph.png"):
-        time.sleep(1)
-
-    if 'CurrentActiveUser' in session:
-        return render_template('analysisresult.html',
-                               summaryresultdata = summary,
-                               sentimentgraph = "sentimentgraph.png",
-                               userlog="logout",
-                               userlogimage="log-out",
-                               userlogtext=" Logout")
-    else:
-        return render_template('analysisresult.html',
-                               summaryresultdata=summary,
-                               sentimentgraph="sentimentgraph.png",
-                               userlog="login",
-                               userlogimage="log-in",
-                               userlogtext=" Login")
-
-    return render_template('index.html',
-                                   summaryresultdata="No Results!",
-                                   userlog="logout",
-                                   userlogimage="log-out",
-                                   userlogtext=" Logout")
-
-
 
 
 
