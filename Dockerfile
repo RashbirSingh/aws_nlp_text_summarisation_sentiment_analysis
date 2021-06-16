@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN python -m spacy download en_core_web_sm
 
+RUN python -m textblob.download_corpora
+
 RUN pip install scikit-learn
 
 RUN apt update

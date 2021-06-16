@@ -20,6 +20,7 @@ import os
 import tweepy as tw
 import json
 import wget
+from pathlib import Path
 
 #python -m spacy download en_core_web_sm
 nlp = en_core_web_sm.load()
@@ -43,6 +44,9 @@ dynamodb = boto3.resource('dynamodb', aws_access_key_id=os.getenv("aws_access_ke
                           aws_secret_access_key=os.getenv("aws_secret_access_key"),
                           region_name=os.getenv("region_name"))
 athenaclient = boto3.client('athena',  aws_access_key_id=os.getenv("aws_access_key_id"),
+                          aws_secret_access_key=os.getenv("aws_secret_access_key"),
+                          region_name=os.getenv("region_name"))
+s3 = boto3.client('s3', aws_access_key_id=os.getenv("aws_access_key_id"),
                           aws_secret_access_key=os.getenv("aws_secret_access_key"),
                           region_name=os.getenv("region_name"))
 
@@ -371,7 +375,9 @@ def newsTextSummarizer(keyword):
 
 
 def textSentimentAnalysis(text):
-    os.remove("static/plots/sentimentgraph.png")
+    my_file = Path("static/plots/sentimentgraph.png")
+    if my_file.is_file():
+        os.remove("static/plots/sentimentgraph.png")
     blob = TextBlob(text)
     for sentence in blob.sentences:
         summarypolarity = sentence.sentiment.polarity
@@ -444,9 +450,10 @@ def TwitterTextToSearch():
     APITextToSearch = request.form["TextToSearch"]
     pushTweetTos3(APITextToSearch)
     processedDataName = athenaScript()
-    print("https://storage-s3810585.s3.amazonaws.com/athenaoutput/"+processedDataName+".csv")
-    wget.download("https://storage-s3810585.s3.amazonaws.com/athenaoutput/"+processedDataName+".csv")
-    df = pd.read_csv(processedDataName+".csv")
+    time.sleep(3)
+    s3.download_file("storage-s3810585", "athenaoutput/"+processedDataName+".csv", "static/athenacsv/"+processedDataName+".csv")
+
+    df = pd.read_csv("static/athenacsv/"+processedDataName+".csv")
     raw = ".".join(df.text)
     if len(raw) < 3:
         if 'CurrentActiveUser' in session:
